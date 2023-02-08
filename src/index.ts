@@ -23,11 +23,10 @@ Emitter.on("log", LogEvent);
 const serverFile = async (
   filePath: string,
   contentType: string,
-  response: http.ServerResponse<http.IncomingMessage>
+  response: http.ServerResponse<http.IncomingMessage>,
+  message?: string
 ) => {
   try {
-    if (contentType.includes("html"))
-      Emitter.emit("log", filePath, " was served");
     const rowData = await fsPromises.readFile(filePath, {
       encoding: !contentType.includes("image") ? "utf-8" : null,
     });
@@ -36,6 +35,8 @@ const serverFile = async (
       ? JSON.parse(rowData as string)
       : rowData;
     response.end(contentType.includes("json") ? JSON.stringify(data) : data);
+    if (contentType.includes("html"))
+      Emitter.emit("log", filePath, message || "served!");
   } catch (err) {
     response.statusCode = 500;
     response.end("error");
@@ -95,7 +96,8 @@ const server = http.createServer((req, res) => {
       serverFile(
         path.join(__dirname, "../views", "404.html"),
         contentType,
-        res
+        res,
+        `This URL is NOT Found!`
       );
     } else {
       res.end();

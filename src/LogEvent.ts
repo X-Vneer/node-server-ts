@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { logFun } from "./types/index.js";
 
 const LogEvent: logFun = async (url, message) => {
-  const dateTime = `${format(new Date(), "yyyy-MMM-do")}`;
+  const dateTime = `${format(new Date(), "yyyy-MMM-do\tHH:mm:ss")}`;
   const logItem = `${dateTime}\t ${uuid()}\t ${url}\t ${message}\n`;
   const logsDir = path.join(__dirname, "logs");
   try {
