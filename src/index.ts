@@ -20,9 +20,31 @@ const Emitter = new MyEmitter() as TypedEventEmitter<logEmitter>;
 Emitter.on("log", LogEvent);
 
 // server file
+const serverFile = async (
+  filePath: string,
+  contentType: string,
+  response: http.ServerResponse<http.IncomingMessage>
+) => {
+  try {
+    if (contentType.includes("html"))
+      Emitter.emit("log", filePath, " was served");
+    const rowData = await fsPromises.readFile(filePath, {
+      encoding: !contentType.includes("image") ? "utf-8" : null,
+    });
+    response.writeHead(200, { "Content-Type": contentType });
+    const data = contentType.includes("json")
+      ? JSON.parse(rowData as string)
+      : rowData;
+    response.end(contentType.includes("json") ? JSON.stringify(data) : data);
+  } catch (err) {
+    response.statusCode = 500;
+    response.end("error");
+  }
+};
 
 // creating server
-const server = http.createServer(async (req, res) => {
+const server = http.createServer((req, res) => {
+  console.log(req.url, req.method);
   const extention = path.extname(req.url || "");
 
   let contentType: string;
@@ -32,7 +54,7 @@ const server = http.createServer(async (req, res) => {
       contentType = "text/css";
       break;
     case ".js":
-      contentType = "text/js";
+      contentType = "text/javascript";
       break;
     case ".json":
       contentType = "application/json";
@@ -49,6 +71,9 @@ const server = http.createServer(async (req, res) => {
     case ".txt":
       contentType = "text/plane";
       break;
+    case ".ico":
+      contentType = "image/ico";
+      break;
     default:
       contentType = "text/html";
   }
@@ -57,15 +82,24 @@ const server = http.createServer(async (req, res) => {
   const filePath =
     contentType == "text/html" && req.url == "/"
       ? path.join(__dirname, "../views", "index.html")
-      : contentType == "text/html" && req.url?.endsWith("/")
-      ? path.join(__dirname, "../views", "index.html")
-      : contentType == "text/html"
-      ? path.join(__dirname, "../views", req.url + ".html")
+      : contentType == "text/html" && req.url?.slice(-1) == "/"
+      ? path.join(__dirname, "../views", req.url, "index.html")
       : path.join(__dirname, "../views", req.url as string);
   // making sure file exist
   const fileExists = fs.existsSync(filePath);
 
   if (fileExists) {
+    serverFile(filePath, contentType, res);
+  } else {
+    if (contentType.includes("html")) {
+      serverFile(
+        path.join(__dirname, "../views", "404.html"),
+        contentType,
+        res
+      );
+    } else {
+      res.end();
+    }
   }
 });
 
