@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsc --watch",
-    "serve": "node --watch dist/index.js",
+    "server": "node dist/index.js",
     "build": "tsc",
     "test": "vitest"
   },
